@@ -5,7 +5,7 @@
 
 // learning based encoding
 struct CodeBook;
-typedef void (*CodingFunc) (float * input, float * output, CodeBook * codebook);
+typedef void (*CodingFunc) (float * src, float * dst, int dst_stride, CodeBook * codebook);
 
 // code book struct:
 //      name: name of code book [feature name] + [coding option]
@@ -27,13 +27,9 @@ struct CodeBook{
     int coded_length;
 };
 
-void EncodeRect(FloatImage *feat, FloatRect * rect, int * coor, float * dst, CodeBook * codebook)
+void EncodeRect(FloatImage *feat, FloatRect * rect, FloatImage * coor, float * dst, int dst_stride, CodeBook * codebook)
 {
 }
 
-
-void EncodeSingle(float *feat, float * dst, CodeBook * codebook)
-{
-}
 
 #endif
