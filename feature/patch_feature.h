@@ -73,6 +73,61 @@ inline void _PixelHOG (float *c, float *p0,float *p1, float *p2,float *p3,float 
     return;
 }
 
+// hog of UoC
+
+static double uu[9] = {1.0000, 
+		0.9397, 
+		0.7660, 
+		0.500, 
+		0.1736, 
+		-0.1736, 
+		-0.5000, 
+		-0.7660, 
+		-0.9397};
+static double vv[9] = {0.0000, 
+		0.3420, 
+		0.6428, 
+		0.8660, 
+		0.9848, 
+		0.9848, 
+		0.8660, 
+		0.6428, 
+		0.3420};
+        
+inline void _PixelHOG9Bin (float *c, float *p0,float *p1, float *p2,float *p3,float *p4, float *p5,float *p6,float *p7, int img_stride,
+        float *dst, int dst_stride, PixelFeatureOpt * opt)
+{    
+    float gx, gy ;
+    float angle, mod, nt, rbint ;
+    int bint ;    
+    
+    // clear dst
+    memset(dst, 0, sizeof(float)*opt->length);
+    
+    return;
+    int num_ori = int(opt->param[0]);
+    
+    gy = 0.5f * (*p5 - *p1);
+    gx = 0.5f * (*p3 - *p7);
+    mod = vl_fast_sqrt_f (gx*gx + gy*gy) ;
+    
+    // snap to one of 18 orientations within 2*pi, degree=best_o*2*pi/18
+    double best_dot = 0;
+    int best_o = 0;
+    for (int o = 0; o < 9; o++) {
+        double dot = uu[o]*gx + vv[o]*gy;
+        if (dot > best_dot) {
+            best_dot = dot;
+            best_o = o;
+        } else if (-dot > best_dot) {
+            best_dot = -dot;
+            best_o = o+9;
+        }
+    }
+    
+    dst[best_o*dst_stride] = mod;
+    
+}
 
 // lbp
 static unsigned int LBP59_Map[256]=
@@ -262,17 +317,19 @@ void RectPatchFeature(FloatImage * img, FloatImage * desp, FloatImage * patch_co
         
         for(int n=0; n<feat_length; n++)
         {
+            // * very slow due to dense compute on pixel-level map
+            // change to sparse operation later
             // subsampling to patch level
             // the coloumn and row is reverse for vl functions, so col --> row here
             vl_imconvcoltri_f (tmp1.p, tmp1.stride,
                     pixel_feat.p + n*pixel_feat_stride, pixel_feat.height, pixel_feat.width, pixel_feat.stride,
-                    opt->size_x*2, /* filt size */
+                    opt->size_x, /* filt size */
                     opt->step_x, /* subsampling step */
                     VL_PAD_BY_CONTINUITY|VL_TRANSPOSE) ;
             
             vl_imconvcoltri_f (raw_patch_feat.p + patch_feat_stride*n, raw_patch_feat.stride,
                     tmp1.p, tmp1.height, tmp1.width, tmp1.stride,
-                    opt->size_y*2,
+                    opt->size_y,
                     opt->step_y,
                     VL_PAD_BY_CONTINUITY|VL_TRANSPOSE);   
         }

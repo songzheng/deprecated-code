@@ -12,6 +12,17 @@ struct FloatImage
     int stride;
 };
 
+// for column blockwise sparse image
+struct FloatSparseImage
+{
+    float ** p;
+    int ** i;
+    int width;
+    int height;
+    int depth;
+    int block_stride;
+};
+
 struct FloatRect
 {
     float x1;// left

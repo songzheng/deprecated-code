@@ -90,11 +90,11 @@ function im = HOGpicture(w, bs)
 norient = size(w, 3);
 % construct a "glyph" for each orientaion
 bim1 = zeros(bs, bs);
-bim1(:,round(bs/2):round(bs/2)+1) = 1;
+bim1(round(bs/2):round(bs/2)+1,:) = 1;
 bim = zeros([size(bim1) norient]);
 bim(:,:,1) = bim1;
 for i = 2:norient,
-    bim(:,:,i) = imrotate(bim1, -(i-1)*180/norient, 'crop');
+    bim(:,:,i) = imrotate(bim1, (i-1)*180/norient, 'crop');
 end
 
 % make pictures of positive weights bs adding up weighted glyphs

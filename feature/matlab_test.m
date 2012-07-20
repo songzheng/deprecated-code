@@ -1,7 +1,7 @@
 
 im = imread('..\test\test.jpg');
 
-norient = 16;
+norient = 18;
 sbin = 8;
 pixel_opt.name = 'HOG';
 pixel_opt.image_depth = 1;
@@ -18,6 +18,12 @@ opt.step_y = sbin;
 opt.bin_length = pixel_opt.length;
 opt.length = opt.bin_length * opt.numbin_x * opt.numbin_y;
 
-feat = patch_feature(rgb2gray(im), opt);
-
+%  0.0489s vs UoC HOG  0.0231s
+tic;
+for i = 1:1000
+    feat = patch_feature(rgb2gray(im), opt);
+end
+disp(toc/1000);
 feat = feat(:,:,1:8) + feat(:,:,9:16);
+feat = bsxfun(@rdivide, feat, sqrt(sum(feat.^2, 3)));
+imshow(FeatureVisualizeDenseHOG(feat, [], 20));

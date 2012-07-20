@@ -19,7 +19,7 @@ void ReadPixelFeatureOpt(const mxArray * mat_opt, PixelFeatureOpt * opt)
     // find pixel feature function
     opt->f = NULL;
     if(!strcmp(opt->name, "HOG"))
-        opt->f = _PixelHOG;
+        opt->f = _PixelHOG9Bin;
     
     if(!strcmp(opt->name, "LBP"))
         opt->f = _PixelLBP59;

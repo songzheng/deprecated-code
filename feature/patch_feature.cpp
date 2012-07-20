@@ -11,7 +11,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     FloatImage im;
     const mwSize * dims = mxGetDimensions(prhs[0]);
     ReadImage(prhs[0], &im);
-    mexPrintf("%d x %d x %d\n", im.height, im.width, im.depth);
+    //mexPrintf("%d x %d x %d\n", im.height, im.width, im.depth);
     
     RectPatchFeatureOpt opt;
     ReadRectPatchFeatureOpt(prhs[1], &opt);
