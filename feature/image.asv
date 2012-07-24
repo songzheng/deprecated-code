@@ -119,24 +119,9 @@ void FreeSparseMatrix(FloatSparseMatrix * mat)
         if (mat->block_num[i] != 0)
         {
 #ifdef MATLAB_MEMORY
-            mxFree(mat->p[i]);
-            mxFree(mat->i[i]);
-#else
-            delete[] mat->p[i];
-            delete[] mat->i[i];
-#endif
-        }
-    }
-    
-#ifdef MATLAB_MEMORY
-    mxFree(mat->p);
-    mxFree(mat->i);
-    mxFree(mat->block_num);
-#else
-    delete[] mat->p;
-    delete[] mat->i;
-    delete[] mat->block_num;
-#endif   
+            mxFree()
             
+    }
+    }
 }
 #endif
