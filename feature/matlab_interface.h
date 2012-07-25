@@ -19,7 +19,7 @@ void ReadPixelFeatureOpt(const mxArray * mat_opt, PixelFeatureOpt * opt)
     // find pixel feature function
     opt->f = NULL;
     if(!strcmp(opt->name, "HOG"))
-        opt->f = _PixelHOG9Bin;
+        opt->f = _PixelHOG;
     
     if(!strcmp(opt->name, "LBP"))
         opt->f = _PixelLBP59;
@@ -41,6 +41,7 @@ void ReadPixelFeatureOpt(const mxArray * mat_opt, PixelFeatureOpt * opt)
     }
     _COPY_INT_FIELD(image_depth, "image_depth");
     _COPY_INT_FIELD(length, "length");
+    _COPY_INT_FIELD(length_sparse, "length_sparse");
     
     // get code book
     opt->codebook = NULL;
@@ -61,7 +62,9 @@ void ReadRectPatchFeatureOpt(const mxArray * mat_opt, RectPatchFeatureOpt * opt)
         if(mx_pixel_opt == NULL)
             return;
         
-        ReadPixelFeatureOpt(mx_pixel_opt, &opt->pixel_opt);        
+        ReadPixelFeatureOpt(mx_pixel_opt, &opt->pixel_opt);     
+        opt->param = opt->pixel_opt.param;
+        opt->nparam = opt->pixel_opt.nparam;
     }
     else
     {
@@ -76,17 +79,13 @@ void ReadRectPatchFeatureOpt(const mxArray * mat_opt, RectPatchFeatureOpt * opt)
         opt->param = (double *)mxGetPr(mxGetField(mat_opt, 0, "param"));
         opt->nparam = mxGetNumberOfElements(mxGetField(mat_opt, 0, "param"));
         _COPY_INT_FIELD(image_depth, "image_depth");
-        _COPY_INT_FIELD(length, "length");
     }
     
     // get grid parameters    
     _COPY_INT_FIELD(numbin_x, "numbin_x");
     _COPY_INT_FIELD(numbin_y, "numbin_y");
-    _COPY_INT_FIELD(step_x, "step_x");
-    _COPY_INT_FIELD(step_y, "step_y");
-    _COPY_INT_FIELD(size_x, "size_x");
-    _COPY_INT_FIELD(size_y, "size_y");
-    _COPY_INT_FIELD(bin_length, "bin_length");
+    _COPY_INT_FIELD(sizebin_x, "sizebin_x");
+    _COPY_INT_FIELD(sizebin_y, "sizebin_y");
     _COPY_INT_FIELD(length, "length");
     
     // get code book

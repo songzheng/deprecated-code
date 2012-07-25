@@ -53,9 +53,21 @@ void FreeImage(FloatImage * img)
 }
 
 // image norm
-void NormL2Image(FloatImage * img, FloatImage * dst)
+void NormalizeColumn(FloatImage * img)
 {
-    
+    for(int x=0; x<img->width; x++)
+    {
+        float * dst = img->p + x*img->height;
+        
+        float norm = 0.0f;
+        for(int y=0; y<img->height; y++)
+            norm += dst[y]*dst[y];
+        
+        norm = vl_fast_sqrt_f(norm);
+        
+        for(int y=0; y<img->height; y++)
+            dst[y] /= norm;
+    }
 }
 
 // rectangle structure
@@ -90,9 +102,9 @@ void AllocateSparseMatrix(FloatSparseMatrix * mat, int height, int width, int bl
     mat->block_num = new int[width];
 #endif
     
-    memset(img->p, 0, width * sizeof(float *)) ;
-    memset(img->i, 0, width * sizeof(int *)) ;
-    memset(img->block_num, 0, width * sizeof(int)) ;
+    memset(mat->p, 0, width * sizeof(float *)) ;
+    memset(mat->i, 0, width * sizeof(int *)) ;
+    memset(mat->block_num, 0, width * sizeof(int)) ;
     
     mat->height = height;
     mat->width = width;
@@ -109,6 +121,9 @@ void AllocateColumnSparseMatrix(FloatSparseMatrix * mat, int col_idx, int length
     mat->p[col_idx] = new float[length_sparse*mat->block_stride];
     mat->i[col_idx] = new int[length_sparse];
 #endif
+    
+    memset(mat->p[col_idx], 0, length_sparse * sizeof(float)) ;
+    memset(mat->i[col_idx], 0, length_sparse * sizeof(int)) ;
     mat->block_num[col_idx] = length_sparse;
 }
 

@@ -20,6 +20,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     RectPatchFeature(&im, &desp, &patch_coordinate, &opt, NULL);
     
     plhs[0] = WriteImage(&desp);
+    plhs[1] = WriteImage(&patch_coordinate);
+//     plhs[0] = WriteImage(&im);
     FreeImage(&im);    
     FreeImage(&desp);    
+    FreeImage(&patch_coordinate);    
 }

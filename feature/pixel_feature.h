@@ -1,5 +1,8 @@
 
+#ifndef PIXEL_FEATURE_H
+#define PIXEL_FEATURE_H
 #include "image.h"
+#include "coding.h"
 
 // ***************************** //
 // for pixel-wise feature coding
@@ -38,13 +41,14 @@ struct PixelFeatureOpt
 
 void PixelFeatureInitBuffer(PixelFeatureOpt * opt)
 {
-    AllocateSparseMatrix(&opt.buffer, opt->length, 1, 1);
-    AllocateColumnSpareMatrix(&opt.buffer, 1, opt->length_sparse);
+//     printf("%d, %d\n", opt->length, opt->length_sparse);
+    AllocateSparseMatrix(&opt->buffer, opt->length, 1, 1);
+    AllocateColumnSparseMatrix(&opt->buffer, 0, opt->length_sparse);
 }
 
 void PixelFeatureReleaseBuffer(PixelFeatureOpt * opt)
 {
-    FreeSparseMatrix(&opt.buffer);
+    FreeSparseMatrix(&opt->buffer);
 }
 
 // pixel feature implementation
@@ -61,7 +65,7 @@ inline void _PixelRAWGray (float *c, float *p0,float *p1, float *p2,float *p3,
 }
         
 // raw color pixel
-inline void _PixelRAWGray (float *c, float *p0,float *p1, float *p2,float *p3,
+inline void _PixelRAWColor (float *c, float *p0,float *p1, float *p2,float *p3,
         float *p4, float *p5,float *p6,float *p7, int img_stride,
         PixelFeatureOpt * opt)
 {
@@ -76,17 +80,15 @@ inline void _PixelRAWGray (float *c, float *p0,float *p1, float *p2,float *p3,
 }
 
 // hog
-inline void _PixelHOG (float *c, float *p0,float *p1, float *p2,float *p3,float *p4, float *p5,float *p6,float *p7, int img_stride,
-        FloatSparseMatrix * dst, PixelFeatureOpt * opt)
+inline void _PixelHOG (float *c, float *p0,float *p1, float *p2,float *p3,
+        float *p4, float *p5,float *p6,float *p7, int img_stride,
+        PixelFeatureOpt * opt)
 {
     
     float gx, gy ;
     float angle, mod, nt, rbint ;
     int bint ;
-        
-    // clear dst
-    memset(dst, 0, sizeof(float)*opt->length);
-    
+            
     int num_ori = int(opt->param[0]);
     
     gy = 0.5f * (*p5 - *p1);
@@ -99,8 +101,7 @@ inline void _PixelHOG (float *c, float *p0,float *p1, float *p2,float *p3,float 
     /* quantize angle */
     nt = vl_mod_2pi_f (angle) * (num_ori / (2*VL_PI)) ;
     bint = vl_floor_f (nt) ;
-    rbint = nt - bint ;
-        
+    rbint = nt - bint ;        
     
     float * val = opt->buffer.p[0];
     int * bin = opt->buffer.i[0];
@@ -108,7 +109,6 @@ inline void _PixelHOG (float *c, float *p0,float *p1, float *p2,float *p3,float 
     bin[0] = bint%num_ori;
     val[1] = (rbint) * mod;    
     bin[1] = (bint+1)%num_ori;
-    return;
 }
 
 // hog of UoC
@@ -132,17 +132,14 @@ static double vv[9] = {0.0000,
 		0.6428, 
 		0.3420};
         
-inline void _PixelHOG9Bin (float *c, float *p0,float *p1, float *p2,float *p3,float *p4, float *p5,float *p6,float *p7, int img_stride,
-        FloatSparseMatrix * dst, PixelFeatureOpt * opt)
+inline void _PixelHOG9Bin (float *c, float *p0,float *p1, float *p2,float *p3,
+        float *p4, float *p5,float *p6,float *p7, int img_stride,
+        PixelFeatureOpt * opt)
 {    
     float gx, gy ;
     float angle, mod, nt, rbint ;
     int bint ;    
-    
-    // clear dst
-    memset(dst, 0, sizeof(float)*opt->length);
-    
-    return;
+        
     int num_ori = int(opt->param[0]);
     
     gy = 0.5f * (*p5 - *p1);
@@ -184,10 +181,10 @@ static unsigned int LBP59_Map[256]=
  41, 42, 43, 58, 44, 58, 58, 58, 45, 58, 58, 58, 58, 58, 58, 58, 46, 47, 48, 58, 49, 58,
  58, 58, 50, 51, 52, 58, 53, 54, 55, 56, 57};
  
-inline void _PixelLBP59 (float *c, float *p0,float *p1, float *p2,float *p3,float *p4, float *p5,float *p6,float *p7, int img_stride,
-        FloatSparseMatrix * dst, PixelFeatureOpt * opt)
+inline void _PixelLBP59 (float *c, float *p0,float *p1, float *p2,float *p3,
+        float *p4, float *p5,float *p6,float *p7, int img_stride,
+        PixelFeatureOpt * opt)
 {
-    memset(dst, 0, sizeof(float)*opt->length);
     int unsigned bitString = 0 ;
     if(*p0 > *c) bitString |= 0x1 << 0; /*  E */
     if(*p1 > *c) bitString |= 0x1 << 1; /* SE */
@@ -206,3 +203,5 @@ inline void _PixelLBP59 (float *c, float *p0,float *p1, float *p2,float *p3,floa
 
 
 // color histogram
+
+#endif
