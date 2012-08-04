@@ -1,18 +1,24 @@
  
 
 // ***************************** //
-// for image pyramid
-struct PyramidOpt
+// for image pooling
+
+struct PoolingOpt
 {
-    FloatRect * pyramid;
-    int npyramid;    
+    CodeBook * codebook;
 };
 
-    // group and encode in pyramids
-    if(opt->codebook == NULL)
-    {
-        MoveImage(&patch_feat, desp);
-    }
+void RegularGridTrianglePooling(FloatMatrix * image, FloatMatrix * feat_input, FloatMatrix * coord_input, 
+        FloatMatrix * feat_output, FloatMatrix * coord_output, PoolingOpt * opt)
+{    
+}
+
+
+//     // group and encode in pyramids
+//     if(opt->codebook == NULL)
+//     {
+//         MoveImage(&patch_feat, desp);
+//     }
 //     else
 //     {
 //         if(pyra_opt != NULL)

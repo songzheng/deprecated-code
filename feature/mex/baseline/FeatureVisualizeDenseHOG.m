@@ -1,4 +1,4 @@
-function w = FeatureVisualizeDenseHOG(w, feature, bs, type)
+function pos = FeatureVisualizeDenseHOG(w, feature, bs, type)
 
 % visualizeHOG(w)
 % Visualize HOG features/weights.
@@ -9,12 +9,13 @@ if ~exist('type', 'var') || type == 1
     buff = 0;
     % make pictures of positive and negative weights
     scale = max(w(:));
-    pos = HOGpicture(w, bs) * 255/scale;
+    pos = HOGpicture(w, bs);
+    pos = pos * 255/scale;
 %     neg = HOGpicture(-w, bs) * 255/scale;
     
     % put pictures together and draw
     pos = padarray(pos, [buff buff], 128, 'both');
-    w = uint8(pos);
+    pos = uint8(pos);
 %     if min(w(:)) < 0
 %         neg = padarray(neg, [buff buff], 128, 'both');
 %         if size(pos, 1) > size(pos, 2)

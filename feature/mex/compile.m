@@ -1,4 +1,4 @@
-function compile(vlfeat_dir)
+function compile(file, tag, vlfeat_dir)
 if ~exist('vlfeat_dir', 'var')
     vlfeat_dir = 'D:\My Documents\My Work\Util\vlfeat-0.9.13\toolbox';
 end
@@ -78,8 +78,12 @@ end
 
 % Compile each mex file ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 thisDir = fullfile(cur_dir) ;
-fileNames = [ls(fullfile(thisDir, '*.c')); ls(fullfile(thisDir, '*.cpp'))];
-    
+if exist('file', 'var')
+    fileNames = file;
+else
+    fileNames = [ls(fullfile(thisDir, '*.c')); ls(fullfile(thisDir, '*.cpp'))];
+end
+
 for f = 1:size(fileNames,1)
     fileName = fileNames(f, :) ;
         
@@ -90,11 +94,11 @@ for f = 1:size(fileNames,1)
     fprintf('MEX %s\n', filePath);
     
     
-    cmd = {['-I' toolboxDir],   ...
+    cmd = [tag, {['-I' toolboxDir],   ...
         ['-I' vlDir],        ...
         '-O',                ...
-        '-outdir', cur_dir, ...
-        filePath             } ;
+        '-outdir', cur_dir, ...        
+        filePath             }] ;
     
     if useLcc
         cmd{end+1} = lccImpLibPath ;

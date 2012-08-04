@@ -1,0 +1,286 @@
+#ifndef FLOAT_IMAGE_H
+#define FLOAT_IMAGE_H
+
+#ifdef MATLAB_COMPILE
+    #include <matrix.h>
+    #define ASSERT(expr) mxAssert((expr), "Assertion Failed");
+    #define ALLOCATE(type, size) (type *)mxCalloc((size), sizeof(type))
+    #define FREE(ptr) mxFree((ptr))
+#else
+    #include <assert.h>
+    #define ASSERT(expr) assert((expr));
+    #define ALLOCATE(type, size) new type[(size)]()
+    #define FREE(ptr) delete[] ptr
+#endif
+
+// multi-thread
+#ifdef THREAD_MAX
+#ifdef WIN32
+    #include <windows.h>
+#elif defined(__UNIX__)
+    #include <pthread.h>
+#endif
+#endif
+            
+static inline double MIN(double x, double y) { return (x <= y ? x : y); }
+static inline double MAX(double x, double y) { return (x <= y ? y : x); }
+
+static inline float MIN(float x, float y) { return (x <= y ? x : y); }
+static inline float MAX(float x, float y) { return (x <= y ? y : x); }
+
+static inline int MIN(int x, int y) { return (x <= y ? x : y); }
+static inline int MAX(int x, int y) { return (x <= y ? y : x); }
+            
+            
+struct FloatImage
+{
+    float * p;
+    int width;
+    int height;
+    int depth;
+    int stride;
+};
+
+typedef struct FloatImage FloatMatrix;
+
+// matlab style height x width x depth
+void AllocateImage(FloatImage * img, int height, int width, int depth)
+{
+    img->p = ALLOCATE(float, width * height * depth);
+    
+    img->width = width;
+    img->height = height;
+    img->depth = depth;   
+    img->stride = height;   
+}
+
+// move image to another struct
+void MoveImage(FloatImage * src, FloatImage * dst)
+{
+    dst->p = src->p;
+    dst->width = src->width;
+    dst->height = src->height;
+    dst->depth = src->depth;   
+    dst->stride = src->height;   
+    src->p = NULL;
+}
+
+// free image
+void FreeImage(FloatImage * img)
+{
+    if(img->p != NULL)
+        FREE(img->p);
+}
+
+// // image norm
+// void NormalizeColumn(FloatImage * img)
+// {
+//     for(int x=0; x<img->width; x++)
+//     {
+//         float * dst = img->p + x*img->height;
+//         
+//         float norm = 0.0f;
+//         for(int y=0; y<img->height; y++)
+//             norm += dst[y]*dst[y];
+//         
+//         norm = vl_fast_sqrt_f(norm);
+//         
+//         for(int y=0; y<img->height; y++)
+//             dst[y] /= norm;
+//     }
+// }
+
+// rectangle structure
+struct FloatRect
+{
+    float x1;// left
+    float y1;// top
+    float x2;// right
+    float y2;// bottom
+};
+
+// for column blockwise sparse matrix
+struct FloatSparseMatrix
+{
+    float * p;
+    int * i;
+    int block_num;
+    int width;
+    int height;
+    int block_size;
+};
+        
+void AllocateSparseMatrix(FloatSparseMatrix * mat, int height, int width, int block_num, int block_size)
+{    
+    mat->p = ALLOCATE(float, width*block_num*block_size);
+    mat->i = ALLOCATE(int, width*block_num);
+        
+    for(int i=0; i<width*block_num; i++)
+        mat->i[i] = -1;
+    
+    mat->block_num = block_num;
+    mat->height = height;
+    mat->width = width;
+    mat->block_size = block_size;
+}
+
+
+void FreeSparseMatrix(FloatSparseMatrix * mat)
+{
+    FREE(mat->p);
+    FREE(mat->i);         
+}
+
+//  helper function
+inline void AddSparseMatrix(FloatSparseMatrix * sparse, int idx, float coef, float * dst)
+{
+    float * val = sparse->p + idx*sparse->block_num*sparse->block_size;
+    int * bin = sparse->i + idx*sparse->block_num;
+    for(int i=0; i<sparse->block_num; i++)
+    {        
+        int b = *(bin++);
+        if(b >= 0)
+        {
+            float * dense = dst + b*sparse->block_size;
+            for(int j=0; j<sparse->block_size; j++)
+                *(dense++) += coef*(*(val++));
+        }
+        else
+        {
+            val += sparse->block_size;
+        }
+    }
+}
+
+#ifdef MATLAB_COMPILE
+
+#define FUNC_PROC2(name) Func ## name
+#define FUNC_PROC(name) FUNC_PROC2(name)
+#define FUNC_INIT2(name) Init ## name
+#define FUNC_INIT(name) FUNC_INIT2(name)
+
+#define COPY_INT_FIELD(field_name) opt->field_name = (mxGetField(mat_opt, 0, #field_name)==NULL)?0:(int)mxGetScalar(mxGetField(mat_opt, 0, #field_name))
+#define COPY_MATRIX_FIELD(field_name, type) opt->field_name = (mxGetField(mat_opt, 0, #field_name)==NULL)?NULL:(type *)mxGetPr(mxGetField(mat_opt, 0, #field_name))
+
+
+// ***************************//
+// array operations
+// read pointers in mat array
+void MatReadFloatMatrix(const mxArray * mat_matrix, FloatMatrix * matrix)
+{    
+    matrix->p = (float *)mxGetPr(mat_matrix);
+    int ndims = mxGetNumberOfDimensions(mat_matrix);
+    const mwSize * dims = mxGetDimensions(mat_matrix);
+    
+    matrix->height = dims[0];
+    
+    if(ndims == 1)
+    {
+        matrix->width = 1;
+        matrix->depth = 1;
+        return;
+    }
+    
+    matrix->width = dims[1];
+    if(ndims == 2)
+    {
+        matrix->depth = 1;
+        return;
+    }
+     
+    matrix->depth = dims[2];
+}
+
+
+// copy between matlab and mex
+void MatCopyToFloatMatrix(const mxArray * mx_image, FloatImage * image)
+{
+    const mwSize ndim = mxGetNumberOfDimensions(mx_image);
+    int dims[3];
+    const mwSize * src_dims = mxGetDimensions(mx_image);
+    dims[0] = src_dims[0];
+    dims[1] = src_dims[1];
+    if(ndim == 3)
+        dims[2] = src_dims[2];
+    else if(ndim == 2)
+        dims[2] = 1;
+    else
+        return;
+//     mexPrintf("%d x %d x %d\n", dims[0], dims[1], dims[2]);
+//     return;
+    AllocateImage(image, dims[0], dims[1], dims[2]);
+    
+    if(mxGetClassID(mx_image) == mxDOUBLE_CLASS)
+    {
+        double * src = (double *)mxGetPr(mx_image);
+
+        for(int i=0; i<mxGetNumberOfElements(mx_image); i++)
+            image->p[i] = (float)src[i];
+    }
+    else if(mxGetClassID(mx_image) == mxUINT8_CLASS)
+    {        
+        unsigned char * src = (unsigned char * )mxGetPr(mx_image);
+
+        for(int i=0; i<mxGetNumberOfElements(mx_image); i++)
+            image->p[i] = (float)src[i];
+    }
+        
+}
+
+mxArray * MatCopyFromFloatMatrix(FloatImage * image)
+{
+    mwSize dims[3] = {image->height, image->width, image->depth};   
+    
+    mxArray * mx_image = mxCreateNumericArray(3, dims, mxDOUBLE_CLASS, mxREAL);
+    double * dst = mxGetPr(mx_image);
+    
+    for(int i=0; i<mxGetNumberOfElements(mx_image); i++)
+        dst[i] = (double)image->p[i];
+    
+    return mx_image;
+}
+
+
+// allocate mat array
+mxArray * MatAllocateFloatMatrix(FloatMatrix * matrix, int height, int width, int depth)
+{
+    mwSize dims[3]= {height, width, depth};
+    mxArray * ret = mxCreateNumericArray(3, dims, mxSINGLE_CLASS, mxREAL);
+    matrix->p = (float *)mxGetPr(ret);
+    matrix->height = height;
+    matrix->width = width;
+    matrix->depth = depth;
+    
+    return ret;
+}
+
+mxArray * MatAllocateFloatSparseMatrix(FloatSparseMatrix * matrix, int height, int width, int block_num, int block_size)
+{
+    const char * field[] = {"p", "i"};
+    
+    mxArray * ret = mxCreateStructMatrix(1, 1, 2, field);
+    
+    mwSize dims[2];
+    dims[0] = block_num*block_size;
+    dims[1] = width;
+    mxArray * ret_p = mxCreateNumericArray(2, dims, mxSINGLE_CLASS, mxREAL);
+    mxSetField(ret, 0, "p", ret_p);
+    matrix->p = (float *)mxGetPr(ret_p);
+    
+    dims[0] = block_num;
+    dims[1] = width;
+    mxArray * ret_i = mxCreateNumericArray(2, dims, mxINT32_CLASS, mxREAL);
+    mxSetField(ret, 0, "i", ret_i);
+    matrix->i = (int *)mxGetPr(ret_i);
+    
+    matrix->height = height;
+    matrix->width = width;
+    matrix->block_num = block_num;
+    matrix->block_size = block_size;
+    
+    return ret;
+}
+#endif
+
+
+#endif
